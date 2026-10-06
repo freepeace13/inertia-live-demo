@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    name: Demo app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: inertia-live-demo
+      - uses: actions/checkout@v4
+        with:
+          repository: freepeace13/inertia-live
+          path: inertia-live
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build the client packages the demo links to
+        working-directory: inertia-live
+        run: npm ci && npm run build
+      - name: Prepare the app
+        working-directory: inertia-live-demo
+        run: |
+          cp .env.example .env && touch database/database.sqlite
+          composer install --prefer-dist --no-interaction
+          php artisan key:generate
+          npm install
+          npm run build
+      - name: Tests
+        working-directory: inertia-live-demo
+        run: php artisan test
+      - name: End-to-end (Reverb round trip and two real browser tabs, Vue and React)
+        working-directory: inertia-live-demo
+        run: |
+          npx playwright install --with-deps chromium
+          php artisan reverb:start --port=8080 &
+          php artisan serve --port=8000 &
+          for i in $(seq 1 30); do
+            curl -s -o /dev/null http://localhost:8000 && nc -z localhost 8080 && break
+            sleep 1
+          done
+          npm run e2e
+          npm run e2e:browser
