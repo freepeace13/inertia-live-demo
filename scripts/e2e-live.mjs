@@ -73,7 +73,16 @@ const page = pageFrom(await (await http('GET', `/documents/${uuid}`)).text());
 const live = page.props._live;
 check('page carries _live bindings', live?.bindings?.[0]?.topic === `documents.${uuid}`, JSON.stringify(live));
 
-// A `_live`-only reload is the client re-reading cursors right after subscribing; track it apart.
+// After subscribing, the client asks the cursors endpoint for current cursors (with the session cookie, like a
+// browser). A `_live`-only reload would mean it fell back to re-reading the page; track both apart.
+const cursorRequests = { a: 0, b: 0 };
+const fetchCursorsFor = (who) => async (url, topics) => {
+    cursorRequests[who]++;
+    const query = topics.map((topic) => `topics[]=${encodeURIComponent(topic)}`).join('&');
+    const res = await http('GET', `${url}?${query}`, undefined, { Accept: 'application/json' });
+    if (!res.ok) throw new Error(`cursors endpoint answered ${res.status}`);
+    return (await res.json()).cursors;
+};
 const reloads = { a: [], b: [] };
 const recoveries = { a: 0, b: 0 };
 const record = (who) => async (only) => {
@@ -82,13 +91,15 @@ const record = (who) => async (only) => {
 };
 const echoA = makeEcho();
 const echoB = makeEcho();
-const clientA = new LiveClient({ echo: echoA, reload: record('a'), debounceMs: 50 });
-const clientB = new LiveClient({ echo: echoB, reload: record('b'), debounceMs: 50 });
+const clientA = new LiveClient({ echo: echoA, reload: record('a'), fetchCursors: fetchCursorsFor('a'), debounceMs: 50 });
+const clientB = new LiveClient({ echo: echoB, reload: record('b'), fetchCursors: fetchCursorsFor('b'), debounceMs: 50 });
 clientA.sync(live);
 clientB.sync(live);
 await sleep(1500); // subscriptions (including private channel auth) settle
 
-check('subscriptions re-read _live once confirmed', recoveries.a >= 1 && recoveries.b >= 1, JSON.stringify(recoveries));
+check('page advertises the cursors endpoint', typeof live?.cursors === 'string', JSON.stringify(live?.cursors));
+check('subscriptions check the cursors endpoint once confirmed', cursorRequests.a >= 1 && cursorRequests.b >= 1, JSON.stringify(cursorRequests));
+check('no _live re-read was needed', recoveries.a === 0 && recoveries.b === 0, JSON.stringify(recoveries));
 
 const socketA = echoA.socketId();
 check('both clients connected', Boolean(socketA && echoB.socketId()), `socketA=${socketA}`);
@@ -112,7 +123,7 @@ check('cursor advanced past 0', after.props._live.bindings[0].cursor > 0, String
 
 // 4. A signal at or below the cursor is stale and ignored.
 const reloadsBefore = reloads.b.length;
-clientB.afterReload(after.props._live);
+clientB.sync(after.props._live);
 await http('GET', `/documents/${uuid}`);
 check('no spurious reloads from reads', reloads.b.length === reloadsBefore);
 

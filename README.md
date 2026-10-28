@@ -21,7 +21,7 @@ The server package comes from GitHub (`dev-main`) until it is on Packagist. The 
 ```bash
 # 1. Client packages, next to this repo
 git clone https://github.com/freepeace13/inertia-live.git ../inertia-live
-(cd ../inertia-live && npm install && npm run build)
+(cd ../inertia-live && pnpm install && pnpm build)
 
 # 2. This app
 cp .env.example .env && php artisan key:generate
@@ -50,7 +50,7 @@ The domain and server side are shared by both frontends.
 | Path | What it shows |
 | --- | --- |
 | `app/Domain/Documents` | Stored events with `#[LiveTopic]`, and the projector using `EmitsLiveChanges` |
-| `app/Http/Controllers/DocumentController.php` | `->live("documents.{uuid}", only: [...])` |
+| `app/Http/Controllers/DocumentController.php` | `InertiaLive::render()` with `live("documents.{uuid}", ...)` props |
 | `app/Providers/AppServiceProvider.php` | `Live::authorize(...)` |
 
 Each frontend has its own Vite entry and root view. `HandleInertiaRequests::rootView()` picks one by route name, and each app resolves the same component names from its own `Pages` folder.

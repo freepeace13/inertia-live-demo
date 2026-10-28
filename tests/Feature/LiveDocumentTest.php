@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Document;
-use Freepeace13\InertiaLive\Facades\Live;
+use InertiaLive\Facades\Live;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
@@ -28,6 +28,7 @@ class LiveDocumentTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Documents/Show')
+                ->assertLive("documents.{$document->uuid}", ['document', 'comments'])
                 ->where('_live.bindings.0.topic', "documents.{$document->uuid}")
                 ->where('_live.bindings.0.channel', "live.documents.{$document->uuid}")
                 ->where('_live.bindings.0.props', ['document', 'comments'])

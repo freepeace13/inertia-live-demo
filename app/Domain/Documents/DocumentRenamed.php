@@ -2,7 +2,7 @@
 
 namespace App\Domain\Documents;
 
-use Freepeace13\InertiaLive\Attributes\LiveTopic;
+use InertiaLive\Attributes\LiveTopic;
 use Spatie\EventSourcing\StoredEvents\ShouldBeStored;
 
 #[LiveTopic('documents.{documentUuid}', props: ['document'])]
