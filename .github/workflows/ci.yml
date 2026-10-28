@@ -24,15 +24,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: inertia-live/package.json
       - name: Build the client packages the demo links to
         working-directory: inertia-live
-        run: npm ci && npm run build
+        run: pnpm install --frozen-lockfile && pnpm build
       - name: Prepare the app
         working-directory: inertia-live-demo
         run: |
           cp .env.example .env && touch database/database.sqlite
           composer install --prefer-dist --no-interaction
           php artisan key:generate
+          php artisan migrate --force
           npm install
           npm run build
       - name: Tests

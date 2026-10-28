@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Document;
-use Freepeace13\InertiaLive\Facades\Live;
+use InertiaLive\Facades\Live;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

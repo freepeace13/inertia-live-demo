@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use InertiaLive\InertiaLive;
+
+use function InertiaLive\live;
 
 class DocumentController extends Controller
 {
@@ -38,10 +41,12 @@ class DocumentController extends Controller
 
     public function show(Document $document): Response
     {
-        return Inertia::render('Documents/Show', [
-            'document' => $document->only('uuid', 'title'),
-            'comments' => fn () => $document->comments()->latest('id')->get(['id', 'body']),
-        ])->live("documents.{$document->uuid}", only: ['document', 'comments']);
+        $topic = "documents.{$document->uuid}";
+
+        return InertiaLive::render('Documents/Show', [
+            'document' => live($topic, $document->only('uuid', 'title')),
+            'comments' => live($topic, fn () => $document->comments()->latest('id')->get(['id', 'body'])),
+        ]);
     }
 
     public function rename(Request $request, Document $document): RedirectResponse

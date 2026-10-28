@@ -4,7 +4,7 @@ namespace App\Domain\Documents;
 
 use App\Models\Comment;
 use App\Models\Document;
-use Freepeace13\InertiaLive\Concerns\EmitsLiveChanges;
+use InertiaLive\Concerns\EmitsLiveChanges;
 use Spatie\EventSourcing\EventHandlers\Projectors\Projector;
 
 final class DocumentProjector extends Projector
